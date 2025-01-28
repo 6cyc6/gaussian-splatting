@@ -171,6 +171,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     gaussians.densify_and_prune(opt.densify_grad_threshold, 0.005, scene.cameras_extent, size_threshold, radii)
                 
                 if iteration % opt.opacity_reset_interval == 0 or (dataset.white_background and iteration == opt.densify_from_iter):
+                    # avoid floating object close to the camera to impede the reconstruction learning
+                    # reset opacity to 0.01
                     gaussians.reset_opacity()
 
             # Optimizer step

@@ -14,10 +14,12 @@ import math
 import numpy as np
 from typing import NamedTuple
 
+
 class BasicPointCloud(NamedTuple):
     points : np.array
     colors : np.array
     normals : np.array
+
 
 def geom_transform_points(points, transf_matrix):
     P, _ = points.shape
@@ -28,6 +30,7 @@ def geom_transform_points(points, transf_matrix):
     denom = points_out[..., 3:] + 0.0000001
     return (points_out[..., :3] / denom).squeeze(dim=0)
 
+
 def getWorld2View(R, t):
     Rt = np.zeros((4, 4))
     Rt[:3, :3] = R.transpose()
@@ -35,20 +38,50 @@ def getWorld2View(R, t):
     Rt[3, 3] = 1.0
     return np.float32(Rt)
 
+
 def getWorld2View2(R, t, translate=np.array([.0, .0, .0]), scale=1.0):
+    """
+    Transformation matrix from world to camera coordinates
+    """
     Rt = np.zeros((4, 4))
     Rt[:3, :3] = R.transpose()
     Rt[:3, 3] = t
     Rt[3, 3] = 1.0
 
+    # get camera position in world coordinates
     C2W = np.linalg.inv(Rt)
     cam_center = C2W[:3, 3]
+    # apply translation and scaling to the camera center
     cam_center = (cam_center + translate) * scale
     C2W[:3, 3] = cam_center
+
+    # turn back to W2C homogeneous matrix
     Rt = np.linalg.inv(C2W)
     return np.float32(Rt)
 
+
 def getProjectionMatrix(znear, zfar, fovX, fovY):
+    """
+    Projection matrix (perspective view to orthogonal view)
+    P_proj = P_ortho->NDC @ P_pers->ortho
+    cam -> NDC: (right-handed coordinate -> right-handed coordinate)
+    P_proj = [[2n / (r - l) , 0            , (r + l) / (r - l) , 0             ],
+              [0            , 2n / (t - b) , (t + b) / (t - b) , 0             ],
+              [0            , 0            , f / (f - n)       , -fn / (f - n) ],
+              [0            , 0            , 1                 , 0             ]]
+
+    Orthogonal project: normalize to [n, f] -> [0, 1],
+                                     [l, r] -> [-1, 1],
+                                     [b, t] -> [-1, 1].
+    P__ortho->NDC = [[2 / (r - l) , 0           , 0          , -(r + l) / (r - l) ],
+                    [0           , 2 / (t - b) , 0          , -(t + b) / (t - b) ],
+                    [0           , 0           , 1 / (f - n), -n / (f - n)       ],
+                    [0           , 0           , 0          , 1                  ]]
+    P_pers->ortho = [[n,  0,  0   , 0   ],
+                     [0,  n,  0   , 0   ],
+                     [0,  0,  n+f , -fn ],
+                     [0,  0,  1   , 0   ]]
+    """
     tanHalfFovY = math.tan((fovY / 2))
     tanHalfFovX = math.tan((fovX / 2))
 
@@ -70,8 +103,14 @@ def getProjectionMatrix(znear, zfar, fovX, fovY):
     P[2, 3] = -(zfar * znear) / (zfar - znear)
     return P
 
+
 def fov2focal(fov, pixels):
+    """
+    fov_x = 2arctan(width / (2 / focal))
+    fov_y = 2arctan(height / (2 * focal))
+    """
     return pixels / (2 * math.tan(fov / 2))
 
+
 def focal2fov(focal, pixels):
-    return 2*math.atan(pixels/(2*focal))
+    return 2 * math.atan(pixels / (2 * focal))

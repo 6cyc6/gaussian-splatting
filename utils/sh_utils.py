@@ -23,6 +23,9 @@
 
 import torch
 
+"""
+Coefficient of SH up to the 4th order
+"""
 C0 = 0.28209479177387814
 C1 = 0.4886025119029199
 C2 = [
@@ -67,19 +70,25 @@ def eval_sh(deg, sh, dirs):
     Returns:
         [..., C]
     """
-    assert deg <= 4 and deg >= 0
-    coeff = (deg + 1) ** 2
+    assert 4 >= deg >= 0
+    coeff = (deg + 1) ** 2  # num of coefficient
     assert sh.shape[-1] >= coeff
 
-    result = C0 * sh[..., 0]
+    # result accumulate from order 0
+    result = C0 * sh[..., 0]  # order 0
     if deg > 0:
+        # order 1
         x, y, z = dirs[..., 0:1], dirs[..., 1:2], dirs[..., 2:3]
+        # x = sin(theta)cos(phi)
+        # y = sin(theta)sin(phi)
+        # z = cos(theta)
         result = (result -
                 C1 * y * sh[..., 1] +
                 C1 * z * sh[..., 2] -
                 C1 * x * sh[..., 3])
 
         if deg > 1:
+            # order 2
             xx, yy, zz = x * x, y * y, z * z
             xy, yz, xz = x * y, y * z, x * z
             result = (result +
@@ -90,6 +99,7 @@ def eval_sh(deg, sh, dirs):
                     C2[4] * (xx - yy) * sh[..., 8])
 
             if deg > 2:
+                # order 3
                 result = (result +
                 C3[0] * y * (3 * xx - yy) * sh[..., 9] +
                 C3[1] * xy * z * sh[..., 10] +
@@ -100,6 +110,7 @@ def eval_sh(deg, sh, dirs):
                 C3[6] * x * (xx - 3 * yy) * sh[..., 15])
 
                 if deg > 3:
+                    # order 4
                     result = (result + C4[0] * xy * (xx - yy) * sh[..., 16] +
                             C4[1] * yz * (3 * xx - yy) * sh[..., 17] +
                             C4[2] * xy * (7 * zz - 1) * sh[..., 18] +
@@ -111,8 +122,18 @@ def eval_sh(deg, sh, dirs):
                             C4[8] * (xx * (xx - 3 * yy) - yy * (3 * xx - yy)) * sh[..., 24])
     return result
 
+
 def RGB2SH(rgb):
+    """
+    Convert RGB to SH (order 0)
+    rgb: [0, 1] -> [-0.5, 0.5]
+    get the coefficient of order 0
+    """
     return (rgb - 0.5) / C0
 
+
 def SH2RGB(sh):
+    """
+    Convert SH (order 0) back to RGB
+    """
     return sh * C0 + 0.5
