@@ -82,10 +82,10 @@ def copy_files_with_character_and_divisible_number(source_dir, target_dir, speci
 
 
 # Example usage
-source_directory = "/home/galois/dataset/YCB/data3/data/0003"
-target_directory = "/home/galois/dataset/GS/YCB/003"
+source_directory = "/home/galois/dataset/YCB/data3/data/0084"
+target_directory = "/home/galois/dataset/GS/YCB/084"
 character_to_search = "color.jpg"  # Replace with the character or substring to match
-divisible_by_number = 53  # Replace with the number for divisibility check
+divisible_by_number = 53 # 53  # Replace with the number for divisibility check
 
 copy_files_with_character_and_divisible_number(source_directory, target_directory, character_to_search,
                                                divisible_by_number)
